@@ -22,6 +22,14 @@ module.exports = {
         test: /\.css$/i,
         use: ['style-loader', 'css-loader'],
       },
+      {
+        test: /\.(png|svg|jpg|jpeg|gif)$/i,
+        use : [
+          {
+            loader: 'file-loader',
+          },
+        ],
+      },
     ],
   },
   devtool: 'inline-source-map',

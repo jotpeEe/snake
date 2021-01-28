@@ -1,5 +1,13 @@
 import Victor from 'victor';
 import './style.css';
+import bg from '../assets/Background.png';
+import play from '../assets/play.png';
+import inst from '../assets/instructions.png';
+import settings from '../assets/settings.png';
+import credits from '../assets/credits.png';
+import ship from '../assets/ship.png';
+import g_o from '../assets/game_over.jpg';
+
 
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d')
@@ -7,6 +15,38 @@ const right = new Victor(1, 0);
 const down = new Victor(0, 1);
 const left = new Victor(-1, 0);
 const up = new Victor(0, -1);
+
+const bgImage = new Image();
+const playImage = new Image();
+const instructImage = new Image();
+const settingsImage = new Image();
+const creditsImage = new Image();
+const shipImage = new Image();
+const game_over = new Image();
+
+shipImage.src = ship;
+bgImage.src = bg;
+playImage.src = play;
+instructImage.src = inst;
+settingsImage.src = settings;
+creditsImage.src = credits;
+game_over.src = g_o;
+
+let buttonX = [255, 167, 205, 217];
+let buttonY = [100, 140, 180, 220];
+let buttonWidth = [96, 260, 182, 160];
+let buttonHeight = [40, 40, 40, 40];
+
+let backgroundY = 0;
+let spd = 1;
+
+const move = () => {
+  backgroundY -= spd;
+  if (backgroundY == -1 * height){
+    backgroundY = 0;
+  }
+};
+
 
 let requestAnimationFrame = window.requestAnimationFrame || window.mozRequestAnimationFrame ||
                             window.webkitRequestAnimationFrame || window.msRequestAnimationFrame;
@@ -20,14 +60,25 @@ let speed = 100;                                                   // delta time
 let lvl = [];
 let dead = false;
 
-
 const STATE_MENU = {
   tick: function(){
-    if(event.key == 'Enter') {
-      setState(STATE_GAME); 
-    }
+    
+    initialState(); 
+    ctx.clearRect(0, 0, width, height);                       
+    move();    
+    ctx.drawImage(bgImage, 0, backgroundY, 600, 1200);
+    ctx.drawImage(playImage, buttonX[0], buttonY[0]);
+    ctx.drawImage(instructImage, buttonX[1], buttonY[1]); 
+    ctx.drawImage(settingsImage, buttonX[2], buttonY[2]);
+    ctx.drawImage(creditsImage, buttonX[3], buttonY[3]);
+    
+    document.addEventListener('keyup', (event) => {
+      if (event.key == "Enter") {
+        setState(STATE_GAME);
+      }
+    });
   }
-} 
+}
 
 const STATE_GAME = {
   tick: function() {
@@ -55,17 +106,18 @@ const initialState = () => {
   apple.pos.y = randCorGen;
   sizeOfSnake = 4;
   dead = false;
-  setState(STATE_GAME);
 }
 
 const STATE_GAME_OVER = {
   tick: function() {
+    
     ctx.clearRect(0, 0, width, height);                       
+    ctx.drawImage(game_over, 0, 0, 600, 600);
+    
     document.addEventListener('keyup', (event) => {
-      const callback = {
-        'Enter' : initialState
-      }[event.key]
-      callback?.()
+      if (event.key == "Enter") {
+        setState(STATE_MENU);
+      }
     });
   }
 }
@@ -79,6 +131,8 @@ class Sprite {
     this.color = color || 'rgba(150, 150, 150)';
   }
 }
+
+let currentState = STATE_MENU;
 
 for (let i = 0, j = 0, k = 0, l = 0; i < 240; i++) {
   if ( i <= 60 ) {
@@ -232,9 +286,8 @@ const input = () => {
   }[event.key]
   callback?.()
   });
-}
+};
 
-let currentState = STATE_GAME;
 
 const loop = (timestamp) => {                                     // main loop
     
