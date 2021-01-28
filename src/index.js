@@ -59,24 +59,63 @@ let randCorGen = Math.floor(Math.random() * 57)*10;           // random coordina
 let speed = 100;                                                   // delta time
 let lvl = [];
 let dead = false;
+let menu_state = 0;
+let k = 0;
+
+function drawPointer(i) {
+  ctx.drawImage(shipImage, (buttonX[i]-40), (buttonY[i]+5), 30, 30);
+  ctx.drawImage(shipImage, (buttonX[i]+buttonWidth[i])+5, (buttonY[i]+5), 30, 30);
+}
 
 const STATE_MENU = {
   tick: function(){
     
     initialState(); 
     ctx.clearRect(0, 0, width, height);                       
-    move();    
+    move(); 
     ctx.drawImage(bgImage, 0, backgroundY, 600, 1200);
     ctx.drawImage(playImage, buttonX[0], buttonY[0]);
     ctx.drawImage(instructImage, buttonX[1], buttonY[1]); 
     ctx.drawImage(settingsImage, buttonX[2], buttonY[2]);
     ctx.drawImage(creditsImage, buttonX[3], buttonY[3]);
-    
+    menuMove();    
+    if (menu_state == 0) {
+      drawPointer(menu_state);
+    } if (menu_state == 1) {
+      drawPointer(menu_state);
+    } if (menu_state == 2) {
+      drawPointer(menu_state);
+    } if (menu_state == 3) {
+      drawPointer(menu_state);
+    }
+
     document.addEventListener('keyup', (event) => {
-      if (event.key == "Enter") {
+      if (event.key == "Enter" && menu_state == 0) {
         setState(STATE_GAME);
+      } 
+      if (event.key == "ArrowDown") {
+        k = 1;
+      } 
+      if (event.key == "ArrowUp"){
+        k = 2;
       }
     });
+    k = 0;
+  }
+}
+
+function menuMove () {
+  if (k == 1) {
+    if (menu_state == 3) {
+      menu_state = -1;
+    }
+    menu_state += 1;
+  }
+  if (k == 2) {
+    if (menu_state == 0){
+      menu_state = 4;
+    }
+    menu_state -= 1;
   }
 }
 
@@ -98,7 +137,7 @@ const STATE_GAME = {
 }
 
 const initialState = () => {
-  dir = (0, 0);
+  
   speed = 100;
   snake.splice(0, snake.length);
   snake.push(new Sprite(width / 2, height / 2, 'red'));
@@ -245,25 +284,25 @@ const checkColision = () => {
 }
   
 const moveLeft = () => {                                             // handlers for button on click event
-  if ( snake[0].dir != right){
+  if (snake[0].dir != right) {
     dir = left;
   }
 }
 
 const moveRight = () => {
-  if ( snake[0].dir != left ){
+  if (snake[0].dir != left) {
     dir = right;
   }
 }
 
 const moveUp = () => {
-  if ( snake[0].dir != down){
+  if (snake[0].dir != down) {
     dir = up;
-  }
+  } 
 }
 
 const moveDown = () => {
-  if (snake[0].dir != up){
+  if (snake[0].dir != up) {
     dir = down;
   }
 }
