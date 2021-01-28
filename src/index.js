@@ -40,7 +40,7 @@ let buttonHeight = [40, 40, 40, 40];
 let backgroundY = 0;
 let spd = 1;
 
-const move = () => {
+const moveBackground = () => {
   backgroundY -= spd;
   if (backgroundY == -1 * height){
     backgroundY = 0;
@@ -72,7 +72,7 @@ const STATE_MENU = {
     
     initialState(); 
     ctx.clearRect(0, 0, width, height);                       
-    move(); 
+    moveBackground(); 
     ctx.drawImage(bgImage, 0, backgroundY, 600, 1200);
     ctx.drawImage(playImage, buttonX[0], buttonY[0]);
     ctx.drawImage(instructImage, buttonX[1], buttonY[1]); 
@@ -93,10 +93,10 @@ const STATE_MENU = {
       if (event.key == "Enter" && menu_state == 0) {
         setState(STATE_GAME);
       } 
-      if (event.key == "ArrowDown") {
+      if (event.key == "ArrowDown" || event.key == "s") {
         k = 1;
       } 
-      if (event.key == "ArrowUp"){
+      if (event.key == "ArrowUp" || event.key == "w") {
         k = 2;
       }
     });
@@ -173,7 +173,7 @@ class Sprite {
 
 let currentState = STATE_MENU;
 
-for (let i = 0, j = 0, k = 0, l = 0; i < 240; i++) {
+/*for (let i = 0, j = 0, k = 0, l = 0; i < 240; i++) {
   if ( i <= 60 ) {
     lvl[i] = new Sprite(i*10, 0);
   }
@@ -190,7 +190,7 @@ for (let i = 0, j = 0, k = 0, l = 0; i < 240; i++) {
     lvl[i] = new Sprite(l*10, 590);
     l++;
   }
-}
+}*/
 
 const snake = [ new Sprite(width / 2, height / 2, 'red') ];   // creation snake array
 const apple = new Sprite(randCorGen, randCorGen, 'green');    // creation of apple object
@@ -217,7 +217,7 @@ const drawSingle = (sprite) => {                                 // draw single 
 const update = () => {
 
   randCorGen = Math.floor(Math.random() * 56)*10;     // generate random coordinate each update
-  let newSprite = new Sprite(snake[0].pos.x, snake[0].pos.y, 'red');  // create sprite for next move
+  let newSprite = new Sprite(snake[0].pos.x, snake[0].pos.y, 'red');  // create sprite for next moveBackground
     
   snake.unshift(newSprite);                                      // attache new sprite to existing snake
   
