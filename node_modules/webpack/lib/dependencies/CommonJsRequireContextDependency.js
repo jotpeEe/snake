@@ -2,14 +2,17 @@
 	MIT License http://www.opensource.org/licenses/mit-license.php
 	Author Tobias Koppers @sokra
 */
+
 "use strict";
+
+const makeSerializable = require("../util/makeSerializable");
 const ContextDependency = require("./ContextDependency");
-const CriticalDependencyWarning = require("./CriticalDependencyWarning");
 const ContextDependencyTemplateAsRequireCall = require("./ContextDependencyTemplateAsRequireCall");
 
 class CommonJsRequireContextDependency extends ContextDependency {
-	constructor(request, recursive, regExp, range, valueRange) {
-		super(request, recursive, regExp);
+	constructor(options, range, valueRange) {
+		super(options);
+
 		this.range = range;
 		this.valueRange = valueRange;
 	}
@@ -18,16 +21,29 @@ class CommonJsRequireContextDependency extends ContextDependency {
 		return "cjs require context";
 	}
 
-	getWarnings() {
-		if(!this.critical) {
-			return;
-		}
+	serialize(context) {
+		const { write } = context;
 
-		return [
-			new CriticalDependencyWarning(this.critical)
-		];
+		write(this.range);
+		write(this.valueRange);
+
+		super.serialize(context);
+	}
+
+	deserialize(context) {
+		const { read } = context;
+
+		this.range = read();
+		this.valueRange = read();
+
+		super.deserialize(context);
 	}
 }
+
+makeSerializable(
+	CommonJsRequireContextDependency,
+	"webpack/lib/dependencies/CommonJsRequireContextDependency"
+);
 
 CommonJsRequireContextDependency.Template = ContextDependencyTemplateAsRequireCall;
 
