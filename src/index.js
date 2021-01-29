@@ -10,7 +10,7 @@ import g_o from '../assets/game_over.jpg';
 
 
 const canvas = document.getElementById('canvas');
-const ctx = canvas.getContext('2d')
+const ctx = canvas.getContext('2d');
 const right = new Victor(1, 0);
 const down = new Victor(0, 1);
 const left = new Victor(-1, 0);
@@ -32,6 +32,8 @@ settingsImage.src = settings;
 creditsImage.src = credits;
 game_over.src = g_o;
 
+let score = 0;
+
 let buttonX = [255, 167, 205, 217];
 let buttonY = [100, 140, 180, 220];
 let buttonWidth = [96, 260, 182, 160];
@@ -51,7 +53,7 @@ const moveBackground = () => {
 let requestAnimationFrame = window.requestAnimationFrame || window.mozRequestAnimationFrame ||
                             window.webkitRequestAnimationFrame || window.msRequestAnimationFrame;
 let width = canvas.width;
-let height = canvas.height;
+let height = canvas.height-40;
 let dir = (0, 0);
 let progress = 10;
 let sizeOfSnake = 4;
@@ -61,24 +63,44 @@ let lvl = [];
 let dead = false;
 let menu_state = 0;
 let k = 0;
+let currentLevel = 0;
 
 function drawPointer(i) {
   ctx.drawImage(shipImage, (buttonX[i]-40), (buttonY[i]+5), 30, 30);
   ctx.drawImage(shipImage, (buttonX[i]+buttonWidth[i])+5, (buttonY[i]+5), 30, 30);
 }
 
+const STATE_LEVEL_UP = {
+  tick: function() {
+    ctx.clearRect(0, 0, width, height);
+    initialState();
+    ctx.font = '24px serif';
+    
+    ctx.fillText('Level up!!!', width/2 - 60, height/2);
+    ctx.fillText('Next level : '+currentLevel, width/2 - 65, height/2+25);
+    ctx.fillText('Press Enter to continue ', width/2 - 120, height/2+50);
+
+    document.addEventListener('keyup', (event) => {
+      if (event.key == "Enter" && menu_state == 0) {
+        setState(STATE_GAME);
+      } 
+    });
+  }
+}
+
 const STATE_MENU = {
   tick: function(){
     
+    currentLevel = 0;
     initialState(); 
-    ctx.clearRect(0, 0, width, height);                       
+    ctx.clearRect(0, 0, width, height+40);                       
     moveBackground(); 
     ctx.drawImage(bgImage, 0, backgroundY, 600, 1200);
     ctx.drawImage(playImage, buttonX[0], buttonY[0]);
     ctx.drawImage(instructImage, buttonX[1], buttonY[1]); 
     ctx.drawImage(settingsImage, buttonX[2], buttonY[2]);
     ctx.drawImage(creditsImage, buttonX[3], buttonY[3]);
-    menuMove();    
+    changeMenuCursorPosition();    
     if (menu_state == 0) {
       drawPointer(menu_state);
     } if (menu_state == 1) {
@@ -104,7 +126,7 @@ const STATE_MENU = {
   }
 }
 
-function menuMove () {
+function changeMenuCursorPosition () {
   if (k == 1) {
     if (menu_state == 3) {
       menu_state = -1;
@@ -121,7 +143,18 @@ function menuMove () {
 
 const STATE_GAME = {
   tick: function() {
-    ctx.clearRect(0, 0, width, height);                       
+    ctx.clearRect(0, 0, width, height+40);                       
+    ctx.beginPath();
+    ctx.moveTo(0, 600);
+    ctx.lineTo(600, 600);
+    ctx.stroke();
+    ctx.lineWidth = 3;
+    ctx.font = '24px serif';
+    ctx.fillText('score : '+score, 10, 625);
+    ctx.fillText('next level : '+((1000/20)-(score/20)), 430, 625);
+    drawSingle(apple_example);
+    
+    createLvl(currentLevel);
     input();
     checkColision();
     checkSnakeColision();
@@ -133,11 +166,13 @@ const STATE_GAME = {
     if(dead){
       setState(STATE_GAME_OVER);
     }
+    lvlUp();
   }
 }
 
 const initialState = () => {
   
+  score = 0;
   speed = 100;
   snake.splice(0, snake.length);
   snake.push(new Sprite(width / 2, height / 2, 'red'));
@@ -145,6 +180,8 @@ const initialState = () => {
   apple.pos.y = randCorGen;
   sizeOfSnake = 4;
   dead = false;
+  lvl.length = 0;
+
 }
 
 const STATE_GAME_OVER = {
@@ -175,25 +212,47 @@ let currentState = STATE_MENU;
 
 /*for (let i = 0, j = 0, k = 0, l = 0; i < 240; i++) {
   if ( i <= 60 ) {
-    lvl[i] = new Sprite(i*10, 0);
+    lvl[1][i] = new Sprite(i*10, 0);
   }
   if ( i > 60 && i <= 120) {
-    lvl[i] = new Sprite(0, j*10);
+    lvl[1][i] = new Sprite(0, j*10);
     j++;
   }
   if (i > 120 && i <= 180) {
-    lvl[i] = new Sprite(590, k*10);
+    lvl[1][i] = new Sprite(590, k*10);
     k++;
   }
   if (i > 180 && i <= 240) {
     j = 0;
-    lvl[i] = new Sprite(l*10, 590);
+    lvl[1][i] = new Sprite(l*10, 590);
     l++;
   }
 }*/
 
+function lvlUp(){
+  if (score == 100){
+    currentLevel++;
+    setState(STATE_LEVEL_UP);
+  }
+}
+
+function random(from, to) {
+  from = Math.ceil(from);
+  to = Math.floor(to);
+  return Math.floor(Math.random() * (to - from) + from)*10;
+}
+
+function createLvl(num){
+  if (lvl.length == 0){
+    for (let i = 0; i < num*num; i++){
+      lvl[i] = new Sprite(random(1, 58), random(1, 58));
+    }
+  }
+}
+
 const snake = [ new Sprite(width / 2, height / 2, 'red') ];   // creation snake array
 const apple = new Sprite(randCorGen, randCorGen, 'green');    // creation of apple object
+const apple_example = new Sprite(570, 613, 'green');
 
 const posEq = (vector1, vector2) => {
   if (vector1.pos.x == vector2.pos.x && vector1.pos.y == vector2.pos.y) {
@@ -216,16 +275,16 @@ const drawSingle = (sprite) => {                                 // draw single 
 
 const update = () => {
 
-  randCorGen = Math.floor(Math.random() * 56)*10;     // generate random coordinate each update
   let newSprite = new Sprite(snake[0].pos.x, snake[0].pos.y, 'red');  // create sprite for next moveBackground
     
   snake.unshift(newSprite);                                      // attache new sprite to existing snake
   
   if (posEq(snake[0], apple)) {                                // check if not picking up apple
     let s = lvl.concat(snake);
-    apple.pos.x = randCorGen;
-    apple.pos.y = randCorGen;
-    ++sizeOfSnake;                                               // increment size of the snake
+    apple.pos.x = Math.floor(Math.random() * 55)*10;
+    apple.pos.y = Math.floor(Math.random() * 55)*10;
+    ++sizeOfSnake;
+    score += 20;                                               // increment size of the snake
     if (speed > 40) {
       speed = speed - speed * 0.05;                      // speed up snake with speed limit
     }                     
