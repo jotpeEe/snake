@@ -7,6 +7,7 @@ import settings from '../assets/settings.png';
 import credits from '../assets/credits.png';
 import ship from '../assets/ship.png';
 import g_o from '../assets/game_over.jpg';
+import grass from '../assets/gras.png';
 
 
 const canvas = document.getElementById('canvas');
@@ -16,6 +17,8 @@ const down = new Victor(0, 1);
 const left = new Victor(-1, 0);
 const up = new Victor(0, -1);
 
+
+const grassImage = new Image();
 const bgImage = new Image();
 const playImage = new Image();
 const instructImage = new Image();
@@ -24,6 +27,7 @@ const creditsImage = new Image();
 const shipImage = new Image();
 const game_over = new Image();
 
+grassImage.src = grass;
 shipImage.src = ship;
 bgImage.src = bg;
 playImage.src = play;
@@ -251,7 +255,7 @@ function createLvl(num){
 }
 
 const snake = [ new Sprite(width / 2, height / 2, 'red') ];   // creation snake array
-const apple = new Sprite(randCorGen, randCorGen, 'green');    // creation of apple object
+const apple = new Sprite(random(1, 58), random(1, 58), 'green');    // creation of apple object
 const apple_example = new Sprite(570, 613, 'green');
 
 const posEq = (vector1, vector2) => {
