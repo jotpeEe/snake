@@ -1,59 +1,73 @@
 import Victor from 'victor';
 import './style.css';
-import bg from '../assets/Background.png';
-import play from '../assets/play.png';
-import inst from '../assets/instructions.png';
-import settings from '../assets/settings.png';
-import credits from '../assets/credits.png';
-import ship from '../assets/ship.png';
-import gO from '../assets/game_over.jpg';
-import grass from '../assets/gras.png';
+
+import { Entity, loadLevel } from './components/LevelGen';
+import MENU from './components/Menu';
+import LEVELS from './components/levels';
 
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
+let currentLevel = 0;
+let level = loadLevel(LEVELS[currentLevel]);
+const menu = loadLevel(MENU[0]);
+const menu2 = loadLevel(MENU[1]);
+const gameOver = loadLevel(MENU[2]);
+let activeView = menu;
+let { width } = activeView;
+let { height } = activeView;
+
+function updateCanvasSize(active) {
+  canvas.width = active.width * 10;
+  canvas.height = active.height * 10 + 40;
+  width = activeView.width;
+  height = activeView.height;
+}
+
+updateCanvasSize(activeView);
+
+const ENTITY_TYPE = {
+  EMPTY: '_',
+  GREEN: 'G',
+  BROWN: 'B',
+  WALL: '#',
+  SNAKE_SPAWN: 'S',
+  APPLE_SPAWN: '.',
+  SNAKE_BODY: 'O',
+};
+
+let appleSpawns = level.query((entity) => entity.type === ENTITY_TYPE.APPLE_SPAWN);
+let allBrown = level.query((entity) => entity.type === ENTITY_TYPE.BROWN);
+let allWall = level.query((entity) => entity.type === ENTITY_TYPE.WALL);
+let allGreen = level.query((entity) => entity.type === ENTITY_TYPE.GREEN);
+let lvlcollison = allBrown.concat(allWall, allGreen);
+
+function updateArrays(array) {
+  appleSpawns = array.query((entity) => entity.type === ENTITY_TYPE.APPLE_SPAWN);
+  allBrown = array.query((entity) => entity.type === ENTITY_TYPE.BROWN);
+  allWall = array.query((entity) => entity.type === ENTITY_TYPE.WALL);
+  allGreen = array.query((entity) => entity.type === ENTITY_TYPE.GREEN);
+  lvlcollison = allBrown.concat(allWall, allGreen);
+}
+
+function setActiveView(view) {
+  activeView = view;
+}
+
 const right = new Victor(1, 0);
 const down = new Victor(0, 1);
 const left = new Victor(-1, 0);
 const up = new Victor(0, -1);
 
-const grassImage = new Image();
-const bgImage = new Image();
-const playImage = new Image();
-const instructImage = new Image();
-const settingsImage = new Image();
-const creditsImage = new Image();
-const shipImage = new Image();
-const gameOver = new Image();
-
-grassImage.src = grass;
-shipImage.src = ship;
-bgImage.src = bg;
-playImage.src = play;
-instructImage.src = inst;
-settingsImage.src = settings;
-creditsImage.src = credits;
-gameOver.src = gO;
-
 let score = 0;
-
-const buttonX = [255, 167, 205, 217];
-const buttonY = [100, 140, 180, 220];
-const buttonWidth = [96, 260, 182, 160];
-// const buttonHeight = [40, 40, 40, 40];
 
 const requestAnimationFrame = window.requestAnimationFrame || window.mozRequestAnimationFrame
 || window.webkitRequestAnimationFrame || window.msRequestAnimationFrame;
-const { width } = canvas;
-const height = canvas.height - 40;
 let dir = (0, 0);
-const progress = 10;
 let sizeOfSnake = 4;
 let speed = 100; // delta time
-const lvl = [];
 let dead = false;
 let menuState = 0;
 let k = 0;
-let currentLevel = 0;
 let backgroundY = 0;
 const spd = 1;
 let currentState = {};
@@ -65,60 +79,77 @@ const moveBackground = () => {
   }
 };
 
-function drawPointer(i) {
-  ctx.drawImage(shipImage, (buttonX[i] - 40), (buttonY[i] + 5), 30, 30);
-  ctx.drawImage(shipImage, (buttonX[i] + buttonWidth[i]) + 5, (buttonY[i] + 5), 30, 30);
-}
-
-class Sprite {
-  constructor(x, y, color) {
-    this.pos = {
-      x,
-      y,
-    };
-    this.color = color || 'rgba(150, 150, 150)';
-  }
-}
-
 function random(from, to) {
-  return Math.floor(Math.random() * (Math.floor(to) - Math.ceil(from)) + Math.ceil(from)) * 10;
+  return Math.floor(Math.random() * (Math.floor(to) - Math.ceil(from)) + Math.ceil(from));
 }
 
-const snake = [new Sprite(width / 2, height / 2, 'red')]; // creation snake array
-const apple = new Sprite(random(1, 58), random(1, 58), 'green'); // creation of apple object
-const appleExample = new Sprite(570, 613, 'green');
+const snake = [new Entity(width / 2, height / 2, 'R')]; // creation snake array
+const apple = new Entity((width / 2) + 5, (width / 2) - 5, 'G'); // creation of apple object
 
 const initialState = () => {
+  dir = (0, 0);
   score = 0;
   speed = 100;
   snake.splice(0, snake.length);
-  snake.push(new Sprite(width / 2, height / 2, 'red'));
-  apple.pos.x = random(1, 58);
-  apple.pos.y = random(1, 58);
+  snake.push(new Entity((width / 2), (height / 2), 'R'));
+  // apple.pos.x = random(width + 1, height - 2);
+  // apple.pos.y = random(width + 1, height - 2);
   sizeOfSnake = 4;
   dead = false;
-  lvl.length = 0;
 };
 
 const setState = (state) => {
   currentState = state;
 };
 
-const drawSingle = (sprite) => { // draw single sprite
-  // x, y, width, height
-  ctx.fillStyle = sprite.color;
+function red() {
+  ctx.fillStyle = 'red';
   ctx.strokeStyle = 'black';
-  ctx.strokeRect(sprite.pos.x, sprite.pos.y, 10, 10);
-  ctx.fillRect(sprite.pos.x, sprite.pos.y, 10, 10);
+}
+
+function green() {
+  ctx.fillStyle = 'green';
+  ctx.strokeStyle = 'black';
+}
+
+function brown() {
+  ctx.fillStyle = 'brown';
+  ctx.strokeStyle = 'black';
+}
+
+function white() {
+  ctx.fillStyle = 'white';
+  ctx.strokeStyle = 'white';
+}
+
+function o() {
+  ctx.fillStyle = 'rgba(150, 150, 150)';
+  ctx.strokeStyle = 'black';
+}
+
+const drawSingleEntity = (entity) => {
+  const callback = {
+    R: red,
+    G: green,
+    '#': brown,
+    _: white,
+    O: o,
+    B: brown,
+  }[entity.type];
+  callback?.();
+
+  ctx.strokeRect(entity.pos.x * 10, entity.pos.y * 10, 10, 10);
+  ctx.fillRect(entity.pos.x * 10, entity.pos.y * 10, 10, 10);
 };
 
-function createLvl(num) {
-  if (lvl.length === 0) {
-    for (let i = 0; i < num * num; i += 1) {
-      lvl[i] = new Sprite(random(1, 58), random(1, 58));
-    }
+const drawLevel = (insert) => {
+  if (insert.entities) {
+    insert.entities.forEach(drawSingleEntity);
+    setActiveView(insert);
+  } else {
+    insert.forEach(drawSingleEntity);
   }
-}
+};
 
 const moveLeft = () => { // handlers for button on click event
   if (snake[0].dir !== right) {
@@ -167,9 +198,12 @@ const posEq = (vector1, vector2) => {
   return false;
 };
 
+// const possible = allEmpty.filter((entity) => isSnake(entity.x, entity.y));
+const snakeSpawns = level.query((entity) => entity.type === ENTITY_TYPE.SNAKE_SPAWN);
+
 const checkColision = () => {
-  for (let i = 0; i < lvl.length; i += 1) {
-    if (posEq(lvl[i], snake[0])) {
+  for (let i = 0; i < lvlcollison.length; i += 1) {
+    if (posEq(lvlcollison[i], snake[0])) {
       dead = true;
     }
   }
@@ -184,12 +218,11 @@ const checkSnakeColision = () => {
 };
 
 const update = () => {
-  const newSprite = new Sprite(snake[0].pos.x, snake[0].pos.y, 'red'); // create sprite for next moveBackground
+  const newSprite = new Entity(snake[0].pos.x, snake[0].pos.y, 'R');
   snake.unshift(newSprite); // attache new sprite to existing snake
 
   if (posEq(snake[0], apple)) { // check if not picking up apple
-    apple.pos.x = random(2, 58);
-    apple.pos.y = random(2, 58);
+    apple.pos = appleSpawns[random(1, appleSpawns.length)].pos;
     sizeOfSnake += 1; // increment size of the snake
     score += 20;
     if (speed > 40) {
@@ -198,34 +231,34 @@ const update = () => {
   }
 
   snake[0].dir = dir; // set direction for head of the snake from previous update
-  snake[1].color = 'rgba(150, 150, 150)';
+  snake[1].type = 'O';
 
   if (dir === left) { // running all the checks on newly created snake sprite
     if (snake[0].pos.x <= 0) {
       snake[0].pos.x = width;
     }
-    snake[0].pos.x -= progress;
+    snake[0].pos.x -= 1;
   }
 
   if (dir === right) {
-    if (snake[0].pos.x >= width - 10) {
-      snake[0].pos.x = 0 - 10;
+    if (snake[0].pos.x >= width - 1) {
+      snake[0].pos.x = 0 - 1;
     }
-    snake[0].pos.x += progress;
+    snake[0].pos.x += 1;
   }
 
   if (dir === up) {
     if (snake[0].pos.y <= 0) {
       snake[0].pos.y = height;
     }
-    snake[0].pos.y -= progress;
+    snake[0].pos.y -= 1;
   }
 
   if (dir === down) {
-    if (snake[0].pos.y >= height - 10) {
-      snake[0].pos.y = 0 - 10;
+    if (snake[0].pos.y >= height - 1) {
+      snake[0].pos.y = 0 - 1;
     }
-    snake[0].pos.y += progress;
+    snake[0].pos.y += 1;
   }
 
   if (snake.length > sizeOfSnake) { // setting minimal size of the snake
@@ -233,36 +266,32 @@ const update = () => {
   }
 };
 
-const drawWhole = (sprites) => { // draw set of sprites
-  sprites.forEach(drawSingle);
-};
-
 function changeMenuCursorPosition() {
   if (k === 1) {
-    if (menuState === 3) {
+    if (menuState === 1) {
       menuState = -1;
     }
     menuState += 1;
   }
   if (k === 2) {
     if (menuState === 0) {
-      menuState = 4;
+      menuState = 2;
     }
     menuState -= 1;
   }
 }
+
 const STATE_LEVEL_UP = {
   tick() {
-    ctx.clearRect(0, 0, width, height);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
     initialState();
     ctx.font = '24px serif';
-    ctx.fillText('Level up!!!', width / 2 - 60, height / 2);
-    ctx.fillText(`Next level : ${currentLevel}`, width / 2 - 65, height / 2 + 25);
-    ctx.fillText('Press Enter to continue ', width / 2 - 120, height / 2 + 50);
+    ctx.fillText('Level up!!!', canvas.width / 2 - 60, canvas.height / 2);
+    ctx.fillText(`Next level : ${currentLevel}`, canvas.width / 2 - 65, canvas.height / 2 + 25);
+    ctx.fillText('Press Enter to continue ', canvas.width / 2 - 120, canvas.height / 2 + 50);
 
     document.addEventListener('keyup', (event) => {
       if (event.key === 'Enter' && menuState === 0) {
-        // eslint-disable-next-line no-use-before-define
         setState(STATE_GAME);
       }
     });
@@ -270,35 +299,69 @@ const STATE_LEVEL_UP = {
 };
 
 function lvlUp() {
-  if (score === 100) {
+  if (score === 1000) {
     currentLevel += 1;
     setState(STATE_LEVEL_UP);
   }
 }
+/*
+class GameStateBase {
+  constructor(setState) {
+    this.setState = setState;
+  }
+  tick() {
+    throw new Error("Must overload .tick()");
+  }
+}
+
+class StateGame extends GameStateBase {
+  tick() {
+    this.setState();
+  }
+}
+{
+  'GAME': 'game'
+}
+const STATE = {
+  GAME: 'game',
+  GAME_OVER: 'game_over',
+};
+
+const gameStates = {
+  [STATE.GAME]: StateGame,
+  [STATE.GAME_OVER]: StateGameOver,
+}
+setState(STATE.GAME)
+*/
 
 const STATE_GAME = {
   tick() {
-    ctx.clearRect(0, 0, width, height + 40);
-    ctx.beginPath();
-    ctx.moveTo(0, 600);
-    ctx.lineTo(600, 600);
-    ctx.stroke();
-    ctx.lineWidth = 3;
-    ctx.font = '24px serif';
-    ctx.fillText(`score : ${score}`, 10, 625);
-    ctx.fillText(`next level : ${((1000 / 20) - (score / 20))}`, 430, 625);
-    drawSingle(appleExample);
-    createLvl(currentLevel);
+    ctx.clearRect(0, 0, canvas.width, canvas.height + 40);
+    updateCanvasSize(activeView);
+    level = loadLevel(LEVELS[currentLevel]);
+    drawLevel(level);
+    updateArrays(level);
     input();
     checkColision();
     checkSnakeColision();
     update(); // game logic
-    drawWhole(lvl);
-    drawWhole(snake); // renders
-    drawSingle(apple);
+    drawLevel(snake);
 
+    if (apple.pos.x > level.width || apple.pos.y > level.height) {
+      apple.pos.x = appleSpawns[random(1, appleSpawns.length)].pos.x;
+      apple.pos.y = appleSpawns[random(1, appleSpawns.length)].pos.y;
+    }
+    drawSingleEntity(apple);
+    ctx.fillStyle = 'black';
+    ctx.beginPath();
+    ctx.moveTo(0, canvas.height - 40);
+    ctx.lineTo(canvas.width, canvas.height - 40);
+    ctx.stroke();
+    ctx.lineWidth = 1;
+    ctx.font = '24px serif';
+    ctx.fillText(`score : ${score}`, 10, canvas.height - 15);
+    ctx.fillText(`next level : ${(((1000 / 100) / 2) - (score / 20))}`, canvas.width - 170, canvas.height - 15);
     if (dead) {
-      // eslint-disable-next-line no-use-before-define
       setState(STATE_GAME_OVER);
     }
     lvlUp();
@@ -307,27 +370,20 @@ const STATE_GAME = {
 
 const STATE_MENU = {
   tick() {
-    currentLevel = 0;
     initialState();
+    currentLevel = 0;
+    updateCanvasSize(activeView);
     ctx.clearRect(0, 0, width, height + 40);
+    drawLevel(menu);
     moveBackground();
-    ctx.drawImage(bgImage, 0, backgroundY, 600, 1200);
-    ctx.drawImage(playImage, buttonX[0], buttonY[0]);
-    ctx.drawImage(instructImage, buttonX[1], buttonY[1]);
-    ctx.drawImage(settingsImage, buttonX[2], buttonY[2]);
-    ctx.drawImage(creditsImage, buttonX[3], buttonY[3]);
     changeMenuCursorPosition();
     if (menuState === 0) {
-      drawPointer(menuState);
+      drawLevel(menu);
     } if (menuState === 1) {
-      drawPointer(menuState);
-    } if (menuState === 2) {
-      drawPointer(menuState);
-    } if (menuState === 3) {
-      drawPointer(menuState);
+      drawLevel(menu2);
     }
 
-    document.addEventListener('keyup', (event) => {
+    document.addEventListener('keydown', (event) => {
       if (event.key === 'Enter' && menuState === 0) {
         setState(STATE_GAME);
       }
@@ -345,8 +401,8 @@ const STATE_MENU = {
 const STATE_GAME_OVER = {
   tick() {
     ctx.clearRect(0, 0, width, height);
-    ctx.drawImage(gameOver, 0, 0, 600, 600);
-
+    updateCanvasSize(activeView);
+    drawLevel(gameOver);
     document.addEventListener('keyup', (event) => {
       if (event.key === 'Enter') {
         setState(STATE_MENU);
