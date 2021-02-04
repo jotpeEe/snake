@@ -2,9 +2,8 @@ const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 
-
 module.exports = {
-  mode: 'development', 
+  mode: 'development',
   entry: './src/index.js',
   module: {
     rules: [
@@ -12,11 +11,11 @@ module.exports = {
         test: /\.m?js$/,
         exclude: /node_modules/,
         use: {
-          loader: "babel-loader",
+          loader: 'babel-loader',
           options: {
-            presets: ['@babel/preset-env'],  
-          }
-        }
+            presets: ['@babel/preset-env'],
+          },
+        },
       },
       {
         test: /\.css$/i,
@@ -24,7 +23,7 @@ module.exports = {
       },
       {
         test: /\.(png|svg|jpg|jpeg|gif)$/i,
-        use : [
+        use: [
           {
             loader: 'file-loader',
           },
