@@ -5,13 +5,15 @@ import Input from './input';
 import { Entity, loadLevel } from './components/LevelGen';
 import MENU from './components/Menu';
 import LEVELS from './components/levels';
+import { drawLevel, drawSingleEntity } from './components/gfx';
+
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
 
 function random(from, to) {
   return Math.floor(Math.random() * (Math.floor(to) - Math.ceil(from)) + Math.ceil(from));
 }
 
-const canvas = document.getElementById('canvas');
-const ctx = canvas.getContext('2d');
 let currentLevel = random(0, 4);
 let level = loadLevel(LEVELS[currentLevel]);
 const menu = loadLevel(MENU[0]);
@@ -26,6 +28,10 @@ function updateCanvasSize(active) {
   canvas.height = active.height * 10 + 40;
   width = activeView.width;
   height = activeView.height;
+}
+
+function setActiveView(view) {
+  activeView = view;
 }
 
 updateCanvasSize(activeView);
@@ -48,16 +54,12 @@ let allGreen = level.query((entity) => entity.type === ENTITY_TYPE.GREEN);
 let lvlcollison = allBrown.concat(allWall, allGreen);
 
 function updateArrays(array) {
-  snakeSpawns = level.query((entity) => entity.type === ENTITY_TYPE.SNAKE_SPAWN);
+  snakeSpawns = array.query((entity) => entity.type === ENTITY_TYPE.SNAKE_SPAWN);
   appleSpawns = array.query((entity) => entity.type === ENTITY_TYPE.APPLE_SPAWN);
   allBrown = array.query((entity) => entity.type === ENTITY_TYPE.BROWN);
   allWall = array.query((entity) => entity.type === ENTITY_TYPE.WALL);
   allGreen = array.query((entity) => entity.type === ENTITY_TYPE.GREEN);
   lvlcollison = allBrown.concat(allWall, allGreen);
-}
-
-function setActiveView(view) {
-  activeView = view;
 }
 
 const right = new Victor(1, 0);
@@ -94,55 +96,6 @@ const initialState = () => {
 
 const setState = (state) => {
   currentState = state;
-};
-
-function red() {
-  ctx.fillStyle = 'red';
-  ctx.strokeStyle = 'black';
-}
-
-function green() {
-  ctx.fillStyle = 'green';
-  ctx.strokeStyle = 'black';
-}
-
-function brown() {
-  ctx.fillStyle = 'brown';
-  ctx.strokeStyle = 'black';
-}
-
-function white() {
-  ctx.fillStyle = 'white';
-  ctx.strokeStyle = 'white';
-}
-
-function o() {
-  ctx.fillStyle = 'rgba(150, 150, 150)';
-  ctx.strokeStyle = 'black';
-}
-
-const drawSingleEntity = (entity) => {
-  const callback = {
-    R: red,
-    G: green,
-    '#': brown,
-    _: white,
-    O: o,
-    B: brown,
-  }[entity.type];
-  callback?.();
-
-  ctx.strokeRect(entity.pos.x * 10, entity.pos.y * 10, 10, 10);
-  ctx.fillRect(entity.pos.x * 10, entity.pos.y * 10, 10, 10);
-};
-
-const drawLevel = (insert) => {
-  if (insert.entities) {
-    insert.entities.forEach(drawSingleEntity);
-    setActiveView(insert);
-  } else {
-    insert.forEach(drawSingleEntity);
-  }
 };
 
 const moveLeft = () => { // handlers for button on click event
@@ -348,10 +301,11 @@ const STATE_GAME = {
 
   tick() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    updateCanvasSize(activeView);
     level = loadLevel(LEVELS[currentLevel]);
-    drawLevel(level);
+    setActiveView(level);
+    updateCanvasSize(activeView);
     updateArrays(level);
+    drawLevel(level);
     document.addEventListener('keydown', event);
     checkColision();
     checkSnakeColision();
@@ -393,8 +347,9 @@ const STATE_MENU = {
   },
   tick() {
     initialState();
-    updateCanvasSize(activeView);
     ctx.clearRect(0, 0, width, height + 40);
+    setActiveView(menu);
+    updateCanvasSize(activeView);
     drawLevel(menu);
     document.addEventListener('keydown', STATE_MENU.action);
     changeMenuCursorPosition();
@@ -416,6 +371,7 @@ const STATE_GAME_OVER = {
   },
   tick() {
     ctx.clearRect(0, 0, width, height);
+    setActiveView(gameOver);
     updateCanvasSize(activeView);
     drawLevel(gameOver);
     document.addEventListener('keydown', STATE_GAME_OVER.event);
