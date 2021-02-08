@@ -1,13 +1,18 @@
 import Victor from 'victor';
 import './style.css';
 
+import Input from './input';
 import { Entity, loadLevel } from './components/LevelGen';
 import MENU from './components/Menu';
 import LEVELS from './components/levels';
 
+function random(from, to) {
+  return Math.floor(Math.random() * (Math.floor(to) - Math.ceil(from)) + Math.ceil(from));
+}
+
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
-let currentLevel = 0;
+let currentLevel = random(0, 4);
 let level = loadLevel(LEVELS[currentLevel]);
 const menu = loadLevel(MENU[0]);
 const menu2 = loadLevel(MENU[1]);
@@ -35,6 +40,7 @@ const ENTITY_TYPE = {
   SNAKE_BODY: 'O',
 };
 
+let snakeSpawns = level.query((entity) => entity.type === ENTITY_TYPE.SNAKE_SPAWN);
 let appleSpawns = level.query((entity) => entity.type === ENTITY_TYPE.APPLE_SPAWN);
 let allBrown = level.query((entity) => entity.type === ENTITY_TYPE.BROWN);
 let allWall = level.query((entity) => entity.type === ENTITY_TYPE.WALL);
@@ -42,6 +48,7 @@ let allGreen = level.query((entity) => entity.type === ENTITY_TYPE.GREEN);
 let lvlcollison = allBrown.concat(allWall, allGreen);
 
 function updateArrays(array) {
+  snakeSpawns = level.query((entity) => entity.type === ENTITY_TYPE.SNAKE_SPAWN);
   appleSpawns = array.query((entity) => entity.type === ENTITY_TYPE.APPLE_SPAWN);
   allBrown = array.query((entity) => entity.type === ENTITY_TYPE.BROWN);
   allWall = array.query((entity) => entity.type === ENTITY_TYPE.WALL);
@@ -68,20 +75,7 @@ let speed = 100; // delta time
 let dead = false;
 let menuState = 0;
 let k = 0;
-let backgroundY = 0;
-const spd = 1;
 let currentState = {};
-
-const moveBackground = () => {
-  backgroundY -= spd;
-  if (backgroundY === -1 * height) {
-    backgroundY = 0;
-  }
-};
-
-function random(from, to) {
-  return Math.floor(Math.random() * (Math.floor(to) - Math.ceil(from)) + Math.ceil(from));
-}
 
 const snake = [new Entity(width / 2, height / 2, 'R')]; // creation snake array
 const apple = new Entity((width / 2) + 5, (width / 2) - 5, 'G'); // creation of apple object
@@ -152,43 +146,27 @@ const drawLevel = (insert) => {
 };
 
 const moveLeft = () => { // handlers for button on click event
-  if (snake[0].dir !== right) {
+  if (snake[0].dir !== right && snake[0].dir !== left) {
     dir = left;
   }
 };
 
 const moveRight = () => {
-  if (snake[0].dir !== left) {
+  if (snake[0].dir !== left && snake[0].dir !== right) {
     dir = right;
   }
 };
 
 const moveUp = () => {
-  if (snake[0].dir !== down) {
+  if (snake[0].dir !== down && snake[0].dir !== up) {
     dir = up;
   }
 };
 
 const moveDown = () => {
-  if (snake[0].dir !== up) {
+  if (snake[0].dir !== up && snake[0].dir !== down) {
     dir = down;
   }
-};
-
-const input = () => {
-  document.addEventListener('keydown', (event) => {
-    const callback = {
-      ArrowLeft: moveLeft,
-      ArrowRight: moveRight,
-      ArrowUp: moveUp,
-      ArrowDown: moveDown,
-      w: moveUp,
-      s: moveDown,
-      a: moveLeft,
-      d: moveRight,
-    }[event.key];
-    callback?.();
-  });
 };
 
 const posEq = (vector1, vector2) => {
@@ -199,7 +177,6 @@ const posEq = (vector1, vector2) => {
 };
 
 // const possible = allEmpty.filter((entity) => isSnake(entity.x, entity.y));
-const snakeSpawns = level.query((entity) => entity.type === ENTITY_TYPE.SNAKE_SPAWN);
 
 const checkColision = () => {
   for (let i = 0; i < lvlcollison.length; i += 1) {
@@ -287,7 +264,7 @@ const STATE_LEVEL_UP = {
     initialState();
     ctx.font = '24px serif';
     ctx.fillText('Level up!!!', canvas.width / 2 - 60, canvas.height / 2);
-    ctx.fillText(`Next level : ${currentLevel}`, canvas.width / 2 - 65, canvas.height / 2 + 25);
+    ctx.fillText('Next level !!!', canvas.width / 2 - 65, canvas.height / 2 + 25);
     ctx.fillText('Press Enter to continue ', canvas.width / 2 - 120, canvas.height / 2 + 50);
 
     document.addEventListener('keyup', (event) => {
@@ -300,10 +277,30 @@ const STATE_LEVEL_UP = {
 
 function lvlUp() {
   if (score === 1000) {
-    currentLevel += 1;
+    currentLevel = random(0, 4);
     setState(STATE_LEVEL_UP);
   }
 }
+
+/* const input = new Input();
+
+function tick() {
+  const actions = {
+    ARROW_UP: moveUp,
+    ARROW_DOWN: moveDown,
+    ARROW_LEFT: moveLeft,
+    ARROW_RIGHT: moveRight,
+  };
+  const action = actions[input.lastEvent] || (() => undefined);
+  action();
+
+  function render() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  }
+
+  input.clear();
+} */
+
 /*
 class GameStateBase {
   constructor(setState) {
@@ -333,23 +330,35 @@ const gameStates = {
 }
 setState(STATE.GAME)
 */
+function event(act) {
+  const callback = {
+    ArrowLeft: moveLeft,
+    ArrowRight: moveRight,
+    ArrowUp: moveUp,
+    ArrowDown: moveDown,
+    w: moveUp,
+    s: moveDown,
+    a: moveLeft,
+    d: moveRight,
+  }[act.key];
+  callback?.();
+}
 
 const STATE_GAME = {
+
   tick() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height + 40);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
     updateCanvasSize(activeView);
     level = loadLevel(LEVELS[currentLevel]);
     drawLevel(level);
     updateArrays(level);
-    input();
+    document.addEventListener('keydown', event);
     checkColision();
     checkSnakeColision();
     update(); // game logic
     drawLevel(snake);
-
     if (apple.pos.x > level.width || apple.pos.y > level.height) {
-      apple.pos.x = appleSpawns[random(1, appleSpawns.length)].pos.x;
-      apple.pos.y = appleSpawns[random(1, appleSpawns.length)].pos.y;
+      apple.pos = appleSpawns[random(1, appleSpawns.length)].pos;
     }
     drawSingleEntity(apple);
     ctx.fillStyle = 'black';
@@ -360,54 +369,56 @@ const STATE_GAME = {
     ctx.lineWidth = 1;
     ctx.font = '24px serif';
     ctx.fillText(`score : ${score}`, 10, canvas.height - 15);
-    ctx.fillText(`next level : ${(((1000 / 100) / 2) - (score / 20))}`, canvas.width - 170, canvas.height - 15);
+    ctx.fillText(`next level : ${(((1000 / 20)) - (score / 20))}`, canvas.width - 170, canvas.height - 15);
     if (dead) {
       setState(STATE_GAME_OVER);
+      document.removeEventListener('keydown', STATE_GAME.event);
     }
     lvlUp();
   },
 };
 
 const STATE_MENU = {
+  action(action) {
+    if (action.key === 'Enter' && menuState === 0 && currentState === STATE_MENU) {
+      document.removeEventListener('keydown', STATE_MENU.action);
+      setState(STATE_GAME);
+    }
+    if (action.key === 'ArrowDown' || action.key === 's') {
+      k = 1;
+    }
+    if (action.key === 'ArrowUp' || action.key === 'w') {
+      k = 2;
+    }
+  },
   tick() {
     initialState();
-    currentLevel = 0;
     updateCanvasSize(activeView);
     ctx.clearRect(0, 0, width, height + 40);
     drawLevel(menu);
-    moveBackground();
+    document.addEventListener('keydown', STATE_MENU.action);
     changeMenuCursorPosition();
     if (menuState === 0) {
       drawLevel(menu);
     } if (menuState === 1) {
       drawLevel(menu2);
     }
-
-    document.addEventListener('keydown', (event) => {
-      if (event.key === 'Enter' && menuState === 0) {
-        setState(STATE_GAME);
-      }
-      if (event.key === 'ArrowDown' || event.key === 's') {
-        k = 1;
-      }
-      if (event.key === 'ArrowUp' || event.key === 'w') {
-        k = 2;
-      }
-    });
     k = 0;
   },
 };
 
 const STATE_GAME_OVER = {
+  event(action) {
+    if (action.key === 'Enter' && currentState === STATE_GAME_OVER) {
+      document.removeEventListener('keydown', STATE_GAME_OVER.event);
+      setState(STATE_MENU);
+    }
+  },
   tick() {
     ctx.clearRect(0, 0, width, height);
     updateCanvasSize(activeView);
     drawLevel(gameOver);
-    document.addEventListener('keyup', (event) => {
-      if (event.key === 'Enter') {
-        setState(STATE_MENU);
-      }
-    });
+    document.addEventListener('keydown', STATE_GAME_OVER.event);
   },
 };
 
