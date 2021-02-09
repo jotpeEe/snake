@@ -26,6 +26,11 @@ function o() {
   ctx.strokeStyle = 'black';
 }
 
+function orange() {
+  ctx.fillStyle = 'orange';
+  ctx.strokeStyle = 'black';
+}
+
 const drawSingleEntity = (entity) => {
   const paint = {
     R: red,
@@ -34,6 +39,8 @@ const drawSingleEntity = (entity) => {
     _: white,
     O: o,
     B: brown,
+    '.': white,
+    A: orange,
   }[entity.type];
   paint?.();
 
