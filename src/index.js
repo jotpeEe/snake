@@ -1,3 +1,4 @@
+/* eslint-disable no-use-before-define */
 import Victor from 'victor';
 import './style.css';
 
@@ -46,7 +47,6 @@ const ENTITY_TYPE = {
   SNAKE_BODY: 'O',
 };
 
-let snakeSpawns = level.query((entity) => entity.type === ENTITY_TYPE.SNAKE_SPAWN);
 let appleSpawns = level.query((entity) => entity.type === ENTITY_TYPE.APPLE_SPAWN);
 let allBrown = level.query((entity) => entity.type === ENTITY_TYPE.BROWN);
 let allWall = level.query((entity) => entity.type === ENTITY_TYPE.WALL);
@@ -54,7 +54,6 @@ let allGreen = level.query((entity) => entity.type === ENTITY_TYPE.GREEN);
 let lvlcollison = allBrown.concat(allWall, allGreen);
 
 function updateArrays(array) {
-  snakeSpawns = array.query((entity) => entity.type === ENTITY_TYPE.SNAKE_SPAWN);
   appleSpawns = array.query((entity) => entity.type === ENTITY_TYPE.APPLE_SPAWN);
   allBrown = array.query((entity) => entity.type === ENTITY_TYPE.BROWN);
   allWall = array.query((entity) => entity.type === ENTITY_TYPE.WALL);
@@ -139,9 +138,9 @@ const checkColision = () => {
   }
 };
 
-const checkSnakeColision = () => {
-  for (let i = 4; i < snake.length; i += 1) {
-    if (posEq(snake[0], snake[i])) {
+const checkSnakeColision = (creature) => {
+  for (let i = 4; i < creature.length; i += 1) {
+    if (posEq(creature[0], creature[i])) {
       dead = true;
     }
   }
@@ -255,7 +254,7 @@ const STATE_GAME = {
     // this.handleInput();
     document.addEventListener('keydown', STATE_GAME.event);
     checkColision();
-    checkSnakeColision();
+    checkSnakeColision(snake);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     if (snake.length < 4) {
       level = loadLevel(LEVELS[currentLevel]);

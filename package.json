@@ -6,7 +6,8 @@
   "scripts": {
     "start": "webpack serve --open",
     "build": "webpack",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "upload": "s3cmd del s3://mklos/snake && s3cmd --no-mime-magic --acl-public --delete-removed --delete-after sync dist/ s3://mklos/snake/"
   },
   "author": "",
   "license": "ISC",
